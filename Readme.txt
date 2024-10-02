@@ -1,3 +1,2 @@
-Thanks for downloading this template!
-
+Hello there!
 Project: Video editor Portfolio
