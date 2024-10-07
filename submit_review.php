@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -761,7 +762,88 @@
 
                                     <h3>submit your review</h3>
 
-                                    <form id="reviewForm">
+<?php 
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// Define the path to the text file
+$file_path = 'reviews.txt';
+
+// Initialize variables
+$success = false;
+$email = $name = $review = '';
+$errors = array('name'=>'', 'email'=>'', 'review'=>'');
+
+// Handle form submission
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Validate name
+    if (empty($_POST['name'])) {
+        $errors['name'] = 'A name is required';
+    } else {
+        $name = htmlspecialchars(trim($_POST['name']));
+    }
+
+    // Validate email
+    if (empty($_POST['email'])) {
+        $errors['email'] = 'An email is required';
+    } else {
+        $email = htmlspecialchars(trim($_POST['email']));
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = 'Email must be a valid email address';
+        }
+    }
+
+    // Validate review
+    if (empty($_POST['review'])) {
+        $errors['review'] = 'A review is required';
+    } else {
+        $review = htmlspecialchars(trim($_POST['review']));
+    }
+
+    // If no errors, save the review
+    if (!array_filter($errors)) {
+        // Prepare the review data
+        $reviewData = array(
+            'name' => $name,
+            'email' => $email,
+            'review' => $review,
+            'date' => date('Y-m-d H:i:s')
+        );
+
+        // Read existing reviews
+        if (file_exists($file_path)) {
+            $existingReviews = file_get_contents($file_path);
+            $reviewsArray = json_decode($existingReviews, true);
+            if (!is_array($reviewsArray)) {
+                $reviewsArray = array();
+            }
+        } else {
+            $reviewsArray = array();
+        }
+
+        // Append the new review
+        $reviewsArray[] = $reviewData;
+
+        // Save all reviews back to the file
+        $reviewsJson = json_encode($reviewsArray, JSON_PRETTY_PRINT);
+        if (file_put_contents($file_path, $reviewsJson)) {
+            $success = true;
+            echo "<p>Thank you for your review! It has been successfully submitted.</p>";
+            // Clear the form fields
+            $name = $email = $review = '';
+        } else {
+            echo "<p>An error occurred while saving your review. Please try again.</p>";
+        }
+    } else {
+        echo "<p>Please fix the following errors:</p>";
+    }
+}
+
+// Display the form (with any validation errors)
+?> 
+<form method="POST" action="">
+
                                         <label for="name">Name:</label>
                                         <input type="text" id="name" name="name" rows="4" cols="50" placeholder="Name" required>
 
@@ -776,8 +858,32 @@
                                         <br>
                                         <button type="submit" name="submit" id="submitReview" class="btn">Submit Review</button>
 
-                                    </form>
-                                    <div id="responseMessage"></div>
+                                    
+</form>
+<?php
+// Read and display the reviews
+if (file_exists($file_path)) {
+    $reviewsJson = file_get_contents($file_path);
+    $reviewsArray = json_decode($reviewsJson, true);
+    if (is_array($reviewsArray) && count($reviewsArray) > 0) {
+        echo "<h2>Reviews:</h2>";
+        foreach ($reviewsArray as $review) {
+            $name = htmlspecialchars($review['name']);
+            $email = htmlspecialchars($review['email']);
+            $reviewT = htmlspecialchars($review['review']);
+            $date = htmlspecialchars($review['date']);
+
+            echo '<p><strong>' . $name . '</strong> (' . $email . ') on ' . $date . ':<br>' . $reviewT . '</p><hr>';
+        }
+    } else {
+        echo "<p>No reviews found.</p>";
+    }
+} else {
+    echo "<p>No reviews have been submitted yet.</p>";
+}
+?> 
+
+<div id="responseMessage"></div>
 
                                 </div>
 
